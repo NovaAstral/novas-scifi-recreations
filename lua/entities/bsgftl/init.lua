@@ -41,8 +41,6 @@ function ENT:Initialize()
 	end
 
 	self.JumpCoords = {}
-	self.SearchRadius = 100
-	self.Constrained = 1
 	self.Inputs = WireLib.CreateSpecialInputs(self.Entity,{"Warp","Destination"},{[2] = "VECTOR"}); 
 end
 
@@ -52,86 +50,87 @@ function ENT:TriggerInput(iname, value)
 	elseif(iname == "Warp" and value >= 1) then
 		self.JumpCoords.Dest = self.JumpCoords.Vec
 
-		if (CurTime()-self.NTime) > 4 and !timer.Exists("ftldrivewaittime") and self.JumpCoords.Dest~=self.Entity:GetPos() and util.IsInWorld(self.JumpCoords.Dest) then
+		if (CurTime()-self.NTime) > 4 and !timer.Exists("wait") and self.JumpCoords.Dest ~= self.Entity:GetPos() and util.IsInWorld(self.JumpCoords.Dest) then
 			self.NTime=CurTime()
 			self.Entity:EmitSound("ftldrives/ftl_in.wav",100,100)
-			timer.Create("wait",1.5,1,function() self.Entity:Go() end, self)
-			timer.Create("invisible",0.8,1,function() self.Entity:SetInvisible() end)
-			timer.Create("visible",2.5,1,function() self.Entity:SetVisible() end)
+			timer.Create("wait",1.5,1,function() self.Entity:Jump() end, self)
+			timer.Create("invisible",0.8,1,function() self.Entity:SetVisible(false) end)
+			timer.Create("visible",2.5,1,function() self.Entity:SetVisible(true) end)
+			--timer.Create("sprite",0,1,function() self.Entity:MakeSprite() end)
 		else
 			self.Entity:EmitSound("buttons/combine_button_locked.wav",100,100)
 		end
 	end
 end
 
-function ENT:Go() -- I should rewrite this entire function so I know how it actually works
+function ENT:Jump()
 	local WarpDrivePos = self.Entity:GetPos()
+	local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
 
-	self.Entity:EmitSound("ftldrives/ftl_out.wav",100,100)
+	timer.Create("soundwait",0.1,1,function() self.Entity:EmitSound("ftldrives/ftl_out.wav",100,100) end)
 
-	if(self.Constrained == 1) then
-		self.ConstrainedEnts = ents.FindInSphere( self.Entity:GetPos() , self.SearchRadius)
-		self.DoneList = {}
-		for _, v in pairs(self.ConstrainedEnts) do
-			if v:IsValid() and !self.DoneList[v] then
-				self.ToTele = constraint.GetAllConstrainedEntities(v)
-				for ent,_ in pairs(self.ToTele)do
-					if not (ent.BaseClass and ent.BaseClass.ClassName=="stargate_base" and ent:OnGround()) then
-						if ent:IsValid() and ( ent:GetMoveType()==6 or ent:IsPlayer() or ent:IsNPC() ) then
-							self.DoneList[ent]=ent
-							self:SharedJump(ent)
-						end
-					end
-				end
-			end
-		end
-	else
-		self.ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
-	local Peeps = player.GetAll()
-		for _, k in pairs(Peeps) do
-			if(k:GetPos():Distance(self.Entity:GetPos()) ) then
-				self:SharedJump(k)
-			end
-		end
-		for _, ent in pairs(self.ConstrainedEnts) do
-			self:SharedJump(ent)
+	for _, entity in pairs(ConstrainedEnts) do	
+		if(IsValid(entity)) then
+			self:SharedJump(entity)
 		end
 	end
 end
 
-function ENT:SetInvisible() --Thank you to the The17thDoctor for helping with this function
-	ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
-
-	for _, entity in pairs(ConstrainedEnts) do
-		entity:SetRenderMode( RENDERMODE_TRANSCOLOR )
-		local color = entity:GetColor()
-		color.a = 0
-		entity:SetColor(color)
-		end
-end
-
-function ENT:SetVisible()
-	ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
-
-	for _, entity in pairs(ConstrainedEnts) do
-		entity:SetRenderMode( RENDERMODE_TRANSCOLOR )
-		local color = entity:GetColor()
-		color.a = 255
-		entity:SetColor(color)
-	  end
-end
-
 function ENT:SharedJump(ent)
-local WarpDrivePos = self.Entity:GetPos()
+	local WarpDrivePos = self.Entity:GetPos()
 	local phys = ent:GetPhysicsObject()
-	if !(ent:IsPlayer() or ent:IsNPC()) then ent=phys end
+	local plys = player.GetAll()
+
+	if !(ent:IsPlayer() or ent:IsNPC()) then 
+		ent=phys
+	end
+
 	ent:SetPos(self.JumpCoords.Dest + (ent:GetPos() - WarpDrivePos))
-	if(!phys:IsMoveable())then
+
+	if(!phys:IsMoveable()) then
 		phys:EnableMotion(true)
 		phys:EnableMotion(false)
-	end 
+	end
+
+	for _, ply in pairs(plys) do
+	  local groundent = ply:GetGroundEntity()
+
+	  if IsValid(groundent) and constraint.Find(groundent, self.Entity, "Weld") ~= nil then
+		local localpos = ply:GetLocalPos(groundent)
+		print("ground")
+		ply:SetPos(self.JumpCoords.Dest + (ply:GetPos() - WarpDrivePos))
+	  end
+	end
+
 	phys:Wake()
 end
+
+function ENT:SetVisible(visible) --Thanks to The17thDoctor for this function
+
+	if visible == nil then visible = true end --If nothing is given, visible is set to true by default.
+	local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
+	 
+	for _, entity in pairs(ConstrainedEnts) do
+		entity:SetRenderMode(RENDERMODE_TRANSCOLOR)
+		local color = entity:GetColor()
+		if visible then color.a = 255 else color.a = 0 end
+		entity:SetColor(color)
+	end
+end
+
+--[[
+function ENT:MakeSprite()
+	local pos,material = Vector(0, 0, 0), Material( "sprites/splodesprite" )
+
+	hook.Add("HUDPaint", "paintsprites", function()
+  	pos = pos + Vector(1, 0, 0) * RealFrameTime()
+  	cam.Start3D()
+  	render.SetMaterial(material)
+  	render.DrawSprite( pos, 16, 16, color_white)
+  	cam.End3D()
+end)
+end
+--]]
 
 function ENT:PreEntityCopy()
 	if WireAddon then
@@ -151,6 +150,7 @@ function ENT:OnRemove()
 	timer.Remove("wait")
 	timer.Remove("visible")
 	timer.Remove("invisible")
+	timer.Remove("soundwait")
 	self.Entity:StopSound("ftldrives/ftl_in.wav")
 	self.Entity:StopSound("ftldrives/ftl_out.wav")
 end

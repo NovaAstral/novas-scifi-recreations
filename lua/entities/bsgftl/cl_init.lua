@@ -1,7 +1,7 @@
 include('shared.lua')
 
-language.Add( "Cleanup_warpdrive", "FTL Drive")
-language.Add( "Cleaned_warpdrive", "Cleaned up FTL Drive")
+language.Add( "Cleanup_bsgftldrive", "FTL Drive")
+language.Add( "Cleaned_bsgftldrive", "Cleaned up FTL Drive")
 
 function ENT:Draw()
    self:DrawEntityOutline( 0.0 )
