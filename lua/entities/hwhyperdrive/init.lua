@@ -18,8 +18,8 @@ end
 function ENT:Initialize()
 
 	util.PrecacheModel( "models/hunter/misc/cone1x05.mdl" )
-	util.PrecacheSound( "hyperdrive/hyper_in.wav" )
-	util.PrecacheSound("hyperdrive/hyper_out.wav")
+	util.PrecacheSound( "ftldrives/hyper_in.wav" )
+	util.PrecacheSound("ftldrives/hyper_out.wav")
 	
 	self.Entity:SetModel( "models/hunter/misc/cone1x05.mdl" )
 	
@@ -53,7 +53,7 @@ function ENT:TriggerInput(iname, value)
 
 		if (CurTime()-self.NTime)>7 and !timer.Exists( "warpdrivewaittime" ) and self.JumpCoords.Dest~=self.Entity:GetPos() and util.IsInWorld(self.JumpCoords.Dest) then
 			self.NTime=CurTime()
-			self.Entity:EmitSound("hyperdrive/hyper_in.wav",100,100)
+			self.Entity:EmitSound("ftldrives/hyper_in.wav",100,100)
 			timer.Create("warpdrivewaittime", 10, 1, function()
 			self.Entity:Go()
 			timer.Destroy("warpdrivewaittime")
@@ -123,6 +123,6 @@ end
 
 function ENT:OnRemove()
 	timer.Remove("warpdrivewaittime")
-	self.Entity:StopSound("hyperdrive/hyper_in.wav")
-	self.Entity:StopSound("hyperdrive/hyper_out.wav")
+	self.Entity:StopSound("ftldrives/hyper_in.wav")
+	self.Entity:StopSound("ftldrives/hyper_out.wav")
 end
