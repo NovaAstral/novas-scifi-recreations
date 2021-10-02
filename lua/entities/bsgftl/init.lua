@@ -54,7 +54,7 @@ function ENT:TriggerInput(iname, value)
 			self.NTime=CurTime()
 			self.Entity:EmitSound("ftldrives/ftl_in.wav",100,100)
 			timer.Create("wait",1.5,1,function() self.Entity:Jump() end, self)
-			timer.Create("invisible",0.8,1,function() self.Entity:SetVisible(false) end)
+			timer.Create("invisible",0.8,1,function() self.Entity:SetVisible(true) end) --set this back to false later!
 			timer.Create("visible",2.5,1,function() self.Entity:SetVisible(true) end)
 			--timer.Create("sprite",0,1,function() self.Entity:MakeSprite() end)
 		else
@@ -85,23 +85,26 @@ function ENT:SharedJump(ent)
 		ent=phys
 	end
 
-	ent:SetPos(self.JumpCoords.Dest + (ent:GetPos() - WarpDrivePos))
 
 	if(!phys:IsMoveable()) then
 		phys:EnableMotion(true)
 		phys:EnableMotion(false)
 	end
 
-	for _, ply in pairs(plys) do
-	  local groundent = ply:GetGroundEntity()
+	ent:SetPos(self.JumpCoords.Dest + (ent:GetPos() - WarpDrivePos))
 
-	  if IsValid(groundent) and constraint.Find(groundent, self.Entity, "Weld") ~= nil then
-		local localpos = ply:GetLocalPos(groundent)
-		print("ground")
-		ply:SetPos(self.JumpCoords.Dest + (ply:GetPos() - WarpDrivePos))
+	for _, ply in pairs(plys) do --I think this entire code of finding the groundent should go into the triggerinput function so that we can make the player stop moving
+		local groundent = ply:GetGroundEntity()
+		print(groundent)
+		print(self.Entity)
+		if IsValid(groundent) and constraint.Find(groundent, self.Entity, "Weld",0,0) ~= nil then
+		  print("ground")
+		  ply:SetPos(groundent:GetPos() - ply:GetPos())
+		//   SetPos(pos, dir=Vector( 0, 0, 0 ))
+		//   ply:SetPos(ply:WorldToLocal(groundent:GetPos()))
+		  -- SetMoveType the player to 'none' so they cant move when warping, but this has to go somewhere else so it can start at the beginning of the jump
+		end
 	  end
-	end
-
 	phys:Wake()
 end
 
@@ -113,7 +116,10 @@ function ENT:SetVisible(visible) --Thanks to The17thDoctor for this function
 	for _, entity in pairs(ConstrainedEnts) do
 		entity:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		local color = entity:GetColor()
-		if visible then color.a = 255 else color.a = 0 end
+		if visible then
+			color.a = 255
+		else color.a = 0 
+		end
 		entity:SetColor(color)
 	end
 end
