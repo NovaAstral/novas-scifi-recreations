@@ -66,8 +66,21 @@ end
 function ENT:Jump()
 	local WarpDrivePos = self.Entity:GetPos()
 	local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
-
+	local plys = player.GetAll()
+	
 	timer.Create("soundwait",0.1,1,function() self.Entity:EmitSound("ftldrives/ftl_out.wav",100,100) end)
+
+	for _, ply in pairs(plys) do
+		local groundent = ply:GetGroundEntity()
+		print(groundent)
+		print(self.Entity)
+		if IsValid(groundent) and constraint.Find(groundent, self.Entity, "Weld",0,0) ~= nil then
+			print("ground")
+		  	PlyPos = groundent:WorldToLocal(ply:GetPos()) --Thank you to Consolio for the player teleport
+			timer.Create("plytp",0.1,1,function() ply:SetPos(groundent:LocalToWorld(PlyPos)) end) --teleports the player after jump
+		end
+	end
+-- SetMoveType the player to 'none' so they cant move when warping
 
 	for _, entity in pairs(ConstrainedEnts) do	
 		if(IsValid(entity)) then
@@ -79,7 +92,6 @@ end
 function ENT:SharedJump(ent)
 	local WarpDrivePos = self.Entity:GetPos()
 	local phys = ent:GetPhysicsObject()
-	local plys = player.GetAll()
 
 	if !(ent:IsPlayer() or ent:IsNPC()) then 
 		ent=phys
@@ -93,18 +105,6 @@ function ENT:SharedJump(ent)
 
 	ent:SetPos(self.JumpCoords.Dest + (ent:GetPos() - WarpDrivePos))
 
-	for _, ply in pairs(plys) do --I think this entire code of finding the groundent should go into the triggerinput function so that we can make the player stop moving
-		local groundent = ply:GetGroundEntity()
-		print(groundent)
-		print(self.Entity)
-		if IsValid(groundent) and constraint.Find(groundent, self.Entity, "Weld",0,0) ~= nil then
-		  print("ground")
-		  ply:SetPos(groundent:GetPos() - ply:GetPos())
-		//   SetPos(pos, dir=Vector( 0, 0, 0 ))
-		//   ply:SetPos(ply:WorldToLocal(groundent:GetPos()))
-		  -- SetMoveType the player to 'none' so they cant move when warping, but this has to go somewhere else so it can start at the beginning of the jump
-		end
-	  end
 	phys:Wake()
 end
 
