@@ -56,7 +56,24 @@ function ENT:TriggerInput(iname, value)
 			timer.Create("wait",1.5,1,function() self.Entity:Jump() end, self)
 			timer.Create("invisible",0.8,1,function() self.Entity:SetVisible(true) end) --set this back to false later!
 			timer.Create("visible",2.5,1,function() self.Entity:SetVisible(true) end)
-			--timer.Create("sprite",0,1,function() self.Entity:MakeSprite() end)
+
+			local plys = player.GetAll()
+			local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
+			for _, ply in pairs(plys) do
+				local groundent = ply:GetGroundEntity()
+		
+				if(groundent:IsValid() == false) then
+				else
+					for k,v in pairs(ConstrainedEnts) do
+						if v:GetPos() == groundent:GetPos() then -- This checks if the prop you're standing on is welded to the drive
+							PlyPos = groundent:WorldToLocal(ply:GetPos()) --Thank you to Consolio for the player teleport
+							ply:SetMoveType(0)
+							timer.Create("move",3,1,function() ply:SetMoveType(2) end)
+							timer.Create("plytp",1.6,1,function() ply:SetPos(groundent:LocalToWorld(PlyPos)) end) --teleports the player after jump
+						end	
+					end
+				end
+			end
 		else
 			self.Entity:EmitSound("buttons/combine_button_locked.wav",100,100)
 		end
@@ -66,27 +83,23 @@ end
 function ENT:Jump()
 	local WarpDrivePos = self.Entity:GetPos()
 	local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
-	local plys = player.GetAll()
-	
-	timer.Create("soundwait",0.1,1,function() self.Entity:EmitSound("ftldrives/ftl_out.wav",100,100) end)
 
-	for _, ply in pairs(plys) do
-		local groundent = ply:GetGroundEntity()
-		print(groundent)
-		print(self.Entity)
-		if IsValid(groundent) and constraint.Find(groundent, self.Entity, "Weld",0,0) ~= nil then
-			print("ground")
-		  	PlyPos = groundent:WorldToLocal(ply:GetPos()) --Thank you to Consolio for the player teleport
-			timer.Create("plytp",0.1,1,function() ply:SetPos(groundent:LocalToWorld(PlyPos)) end) --teleports the player after jump
-		end
-	end
--- SetMoveType the player to 'none' so they cant move when warping
+	timer.Create("soundwait",0.2,1,function() self.Entity:EmitSound("ftldrives/ftl_out.wav",100,100) end)
+
 
 	for _, entity in pairs(ConstrainedEnts) do	
 		if(IsValid(entity)) then
 			self:SharedJump(entity)
 		end
 	end
+
+	local pos,material = self.Entity:GetPos(),Material("sprites/splodesprite")
+	hook.Add("HUDPaint","paintsprites",function()
+		cam.Start3D()
+			render.SetMaterial(material)
+			render.DrawSprite(self.Entity:GetPos(),16,16,color_white) -- Draw the sprite in the middle of the map, at 16x16 in it's original colour with full alpha.
+		cam.End3D()
+	end)
 end
 
 function ENT:SharedJump(ent)
@@ -118,7 +131,8 @@ function ENT:SetVisible(visible) --Thanks to The17thDoctor for this function
 		local color = entity:GetColor()
 		if visible then
 			color.a = 255
-		else color.a = 0 
+		else
+			color.a = 0
 		end
 		entity:SetColor(color)
 	end
