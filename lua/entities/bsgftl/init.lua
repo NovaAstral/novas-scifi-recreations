@@ -59,18 +59,23 @@ function ENT:TriggerInput(iname, value)
 
 			local plys = player.GetAll()
 			local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
+
 			for _, ply in pairs(plys) do
-				local groundent = ply:GetGroundEntity()
-		
-				if(groundent:IsValid() == false) then
-				else
-					for k,v in pairs(ConstrainedEnts) do
-						if v:GetPos() == groundent:GetPos() then -- This checks if the prop you're standing on is welded to the drive
-							PlyPos = groundent:WorldToLocal(ply:GetPos()) --Thank you to Consolio for the player teleport
-							ply:SetMoveType(0)
-							timer.Create("move",3,1,function() ply:SetMoveType(2) end)
-							timer.Create("plytp",1.6,1,function() ply:SetPos(groundent:LocalToWorld(PlyPos)) end) --teleports the player after jump
-						end	
+				local tracedown = util.TraceLine({
+					start = ply:GetPos(),
+					endpos = ply:GetPos() + Vector(0,0,-200)
+				})
+
+				if(tracedown.Entity:IsValid()) then
+					local const = constraint.Find(tracedown.Entity,self.Entity)
+					print(const)
+
+					if(const:IsValid()) then --This will never trigger because const is always nil (it also lua errors)
+						PlyPos = tracedown.Entity:WorldToLocal(ply:GetPos())
+						--ply:Lock()
+						ply:SetParent(tracedown.Entity,-1)
+						timer.Create("move", 3, 1, function() ply:UnLock() ply:SetParent(nil,-1) end)
+						--timer.Create("plytp", 1.6, 1, function() ply:SetPos(tracedown.Entity:LocalToWorld(PlyPos)) end)
 					end
 				end
 			end
@@ -92,12 +97,12 @@ function ENT:Jump()
 			self:SharedJump(entity)
 		end
 	end
-
+-- CAP energy weps are probably sprites, go look at those
 	local pos,material = self.Entity:GetPos(),Material("sprites/splodesprite")
 	hook.Add("HUDPaint","paintsprites",function()
 		cam.Start3D()
 			render.SetMaterial(material)
-			render.DrawSprite(self.Entity:GetPos(),16,16,color_white) -- Draw the sprite in the middle of the map, at 16x16 in it's original colour with full alpha.
+			render.DrawSprite(pos,16,16,color_white) -- Draw the sprite in the middle of the map, at 16x16 in it's original colour with full alpha.
 		cam.End3D()
 	end)
 end
@@ -129,8 +134,9 @@ function ENT:SetVisible(visible) --Thanks to The17thDoctor for this function
 	for _, entity in pairs(ConstrainedEnts) do
 		entity:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		local color = entity:GetColor()
+
 		if visible then
-			color.a = 255
+			color.a = color.a
 		else
 			color.a = 0
 		end
