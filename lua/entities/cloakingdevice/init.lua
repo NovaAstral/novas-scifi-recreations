@@ -76,7 +76,10 @@ end
 
 function ENT:SetVisible(visible) --Thanks to The17thDoctor for this function
 
-	if visible == nil then visible = true end --If nothing is given, visible is set to true by default.
+	if visible == nil then --If nothing is given, visible is set to true by default.
+		visible = true
+	end
+	
 	local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
 	
 	for _, entity in pairs(ConstrainedEnts) do
