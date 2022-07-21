@@ -130,7 +130,7 @@ function ENT:SetVisible(visible) --Thanks to The17thDoctor for this function
 	if visible == nil then visible = true end --If nothing is given, visible is set to true by default.
 	local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
 	 
-	for _, entity in pairs(ConstrainedEnts) do
+	for _, entity in pairs(ConstrainedEnts) do --this is a bad way to do this, it doesn't save the current rendermodes/alphas
 		entity:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		local color = entity:GetColor()
 
