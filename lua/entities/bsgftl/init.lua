@@ -2,7 +2,6 @@ AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 include('shared.lua')
 
-
 ENT.WireDebugName = "FTL Drive"
 
 function ENT:SpawnFunction(ply, tr)
@@ -69,7 +68,7 @@ function ENT:TriggerInput(iname, value)
 					local const = constraint.Find(tracedown.Entity,self.Entity)
 					print(const)
 
-					if(const:IsValid()) then --This will never trigger because const is always nil (it also lua errors)
+					if(IsValid(const)) then
 						PlyPos = tracedown.Entity:WorldToLocal(ply:GetPos())
 						--ply:Lock()
 						ply:SetParent(tracedown.Entity,-1)
@@ -113,7 +112,6 @@ function ENT:SharedJump(ent)
 	if !(ent:IsPlayer() or ent:IsNPC()) then 
 		ent=phys
 	end
-
 
 	if(!phys:IsMoveable()) then
 		phys:EnableMotion(true)
