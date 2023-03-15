@@ -2,19 +2,24 @@ AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 include('shared.lua')
 
-ENT.WireDebugName = "SBEP Drive"
+ENT.WireDebugName = "FTL Drive"
 
 function ENT:SpawnFunction(ply, tr)
-	local ent = ents.Create("sbepdrive")
+	local ent = ents.Create("bsgftl")
 	ent:SetPos(tr.HitPos + Vector(0, 0, 20))
 	ent:Spawn()
 	return ent 
 end 
 
--- This is modified from the SBEP Warp Drive
+-- This was originally the SBEP Warp Drive.
+-- Thought it would be easier to just gut it instead of doing everything that I don't know how yet
 
 function ENT:Initialize()
-	self.Entity:SetModel("models/Slyfo/ftl_drive.mdl")
+	util.PrecacheModel("models/hunter/misc/cone1x05.mdl")
+	util.PrecacheSound("warp drives/ftl_in.wav")
+	util.PrecacheSound("warp drives/ftl_out.wav")
+	
+	self.Entity:SetModel("models/hunter/misc/cone1x05.mdl")
 	
 	self.Entity:PhysicsInit(SOLID_VPHYSICS)
 	self.Entity:SetMoveType(MOVETYPE_VPHYSICS)
@@ -44,8 +49,10 @@ function ENT:TriggerInput(iname, value)
 
 		if (CurTime()-self.NTime) > 4 and !timer.Exists("wait") and self.JumpCoords.Dest ~= self.Entity:GetPos() and util.IsInWorld(self.JumpCoords.Dest) then
 			self.NTime=CurTime()
-			self.Entity:EmitSound("",100,100)
+			self.Entity:EmitSound("ftldrives/ftl_in.wav",100,100)
 			timer.Create("wait",1.5,1,function() self.Entity:Jump() end, self)
+			timer.Create("invisible",0.8,1,function() self.Entity:SetVisible(true) end) --set this back to false later!
+			timer.Create("visible",2.5,1,function() self.Entity:SetVisible(true) end)
 
 			local plys = player.GetAll()
 			local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
@@ -79,7 +86,7 @@ function ENT:Jump()
 	local WarpDrivePos = self.Entity:GetPos()
 	local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
 
-	timer.Create("soundwait",0.2,1,function() self.Entity:EmitSound("",100,100) end)
+	timer.Create("soundwait",0.2,1,function() self.Entity:EmitSound("ftldrives/ftl_out.wav",100,100) end)
 
 
 	for _, entity in pairs(ConstrainedEnts) do	
@@ -87,6 +94,14 @@ function ENT:Jump()
 			self:SharedJump(entity)
 		end
 	end
+-- CAP energy weps are probably sprites, go look at those
+	local pos,material = self.Entity:GetPos(),Material("sprites/splodesprite")
+	hook.Add("HUDPaint","paintsprites",function()
+		cam.Start3D()
+			render.SetMaterial(material)
+			render.DrawSprite(pos,16,16,color_white) -- Draw the sprite in the middle of the map, at 16x16 in it's original colour with full alpha.
+		cam.End3D()
+	end)
 end
 
 function ENT:SharedJump(ent)
@@ -107,6 +122,38 @@ function ENT:SharedJump(ent)
 	phys:Wake()
 end
 
+function ENT:SetVisible(visible) --Thanks to The17thDoctor for this function
+
+	if visible == nil then visible = true end --If nothing is given, visible is set to true by default.
+	local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
+	 
+	for _, entity in pairs(ConstrainedEnts) do --this is a bad way to do this, it doesn't save the current rendermodes/alphas
+		entity:SetRenderMode(RENDERMODE_TRANSCOLOR)
+		local color = entity:GetColor()
+
+		if visible then
+			color.a = color.a
+		else
+			color.a = 0
+		end
+		entity:SetColor(color)
+	end
+end
+
+--[[
+function ENT:MakeSprite()
+	local pos,material = Vector(0, 0, 0), Material( "sprites/splodesprite" )
+
+	hook.Add("HUDPaint", "paintsprites", function()
+  	pos = pos + Vector(1, 0, 0) * RealFrameTime()
+  	cam.Start3D()
+  	render.SetMaterial(material)
+  	render.DrawSprite( pos, 16, 16, color_white)
+  	cam.End3D()
+end)
+end
+--]]
+
 function ENT:PreEntityCopy()
 	if WireAddon then
 		duplicator.StoreEntityModifier(self,"WireDupeInfo",WireLib.BuildDupeInfo(self.Entity))
@@ -123,6 +170,9 @@ end
 
 function ENT:OnRemove()
 	timer.Remove("wait")
-	self.Entity:StopSound("")
-	self.Entity:StopSound("")
+	timer.Remove("visible")
+	timer.Remove("invisible")
+	timer.Remove("soundwait")
+	self.Entity:StopSound("warp drives/ftl_in.wav")
+	self.Entity:StopSound("warp drives/ftl_out.wav")
 end
