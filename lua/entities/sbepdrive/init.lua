@@ -71,7 +71,6 @@ function ENT:TriggerInput(iname, value)
 
 				if(tracedown.Entity:IsValid()) then
 					local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
-					print("valid")
 
 					if ConstrainedEnts[tracedown.Entity] ~= nil then
 						PlyPos = tracedown.Entity:WorldToLocal(ply:GetPos())
@@ -79,8 +78,6 @@ function ENT:TriggerInput(iname, value)
 						timer.Create("plytp", 0.52, 1, function() 
 							ply:SetPos(tracedown.Entity:LocalToWorld(PlyPos)) 
 						end)
-
-						print("eee")
 					end
 				end
 			end

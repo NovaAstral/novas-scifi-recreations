@@ -62,12 +62,11 @@ function ENT:TriggerInput(iname, value)
 					start = ply:GetPos(),
 					endpos = ply:GetPos() + Vector(0,0,-200)
 				})
-
+				
 				if(tracedown.Entity:IsValid()) then
-					local const = constraint.Find(tracedown.Entity,self.Entity)
-					print(const)
+					local ConstrainedEnts = constraint.GetAllConstrainedEntities(self.Entity)
 
-					if(IsValid(const)) then
+					if ConstrainedEnts[tracedown.Entity] ~= nil then
 						PlyPos = tracedown.Entity:WorldToLocal(ply:GetPos())
 						--ply:Lock()
 						ply:SetParent(tracedown.Entity,-1)
