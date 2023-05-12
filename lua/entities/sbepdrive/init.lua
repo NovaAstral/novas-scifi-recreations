@@ -59,11 +59,10 @@ function ENT:TriggerInput(iname, value)
 		if (CurTime()-self.NTime) > 3 and !timer.Exists("wait") and self.JumpCoords.Dest ~= self.Entity:GetPos() and util.IsInWorld(self.JumpCoords.Dest) then
 			self.NTime=CurTime()
 			self.Entity:EmitSound("warp drives/sbep_warp.mp3",100,100)
+			
 			timer.Create("wait",0.5,1,function() self.Entity:Jump() end, self)
 
-			local plys = player.GetAll()
-
-			for _, ply in pairs(plys) do
+			for _, ply in pairs(player.GetAll()) do
 				local tracedown = util.TraceLine({
 					start = ply:GetPos(),
 					endpos = ply:GetPos() + Vector(0,0,-200)
